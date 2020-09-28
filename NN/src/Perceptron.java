@@ -12,7 +12,7 @@ public class Perceptron {
 	private static double threshold = 0.5; // experiment
 	private static double[] weights;
 	private static double learningRate = 0.1; //experiment
-	private static int trainingEpisodes = 1;
+	private static int trainingEpisodes = 3;
 	
 	private static void initNetwork() {
 		trainingSetSize = trainingData.length;
@@ -55,11 +55,10 @@ public class Perceptron {
 		for(int e = 1; e<=trainingEpisodes; e++) {
 			for(int i =0; i<trainingSetSize; i++){
 				double input = 0;
-				double error = 0;
 				for(int j = 0; j<networkSize; j++){
 					input+=weights[j]*trainingData[i][j];
 				}
-				error=  networkSize - stepActivationFunction(input);
+				double error=  trainingData[i][networkSize] - stepActivationFunction(input);
 				for(int k =0; k<networkSize; k++){
 					weights[k]+= learningRate*error*trainingData[i][k];
 				}
