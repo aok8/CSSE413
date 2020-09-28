@@ -1,0 +1,9 @@
+I think my program is somewhat intelligent.
+The idea behind intelligence is being able to solve a problem and make decisions based on given information.
+I think this program then, has some intelligence.
+It can distinguish what size of sudoku puzzle it is given, try to find solutions and or decide if the sudoku puzzle is solvable.
+I would not say it is exceptionally intelligent because it does not know what to do when given anything not a sudoku puzzle and is unable to use sudoku solving philosophy to be applied to anything else.
+It is intelligent when it comes to sudoku puzzles, as it can apply decision making to any sudoku puzzle.
+Obviously, some puzzles will take longer than others to solve, but in general it is able to solve multiple different ones without having to be fed only a certain type/size of sudoku puzzle.
+I think in terms of overall intelligence, this program would have to be able to learn and or use what it learns to solve either new problems or old problems more efficiently.
+Since it can’t do anything like this, I would have to say “kinda” when asked if the program is intelligent. 
