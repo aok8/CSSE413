@@ -10,9 +10,10 @@ public class XOR {
 	private static int trainingSetSize = 0;
 	private static int inputLayerSize = 2;
 	private static int hiddenLayerSize = 3;
+	private static double threshold = 0.5;
 	private static double[][] hiddenLayerWeights; // [from][to]
 	private static double[] outputLayerWeights;
-	private static double learningRate = 0.1; //experiment 
+	private static double learningRate = 0.7; //experiment
 	
 	private static void initNetwork() {
 		trainingSetSize = trainingData.length;
@@ -48,10 +49,15 @@ public class XOR {
 //		printWeights();
 		testNetwork();
 	}
+
+	private static double stepActivationFunction(double input){
+		if (input >= threshold) return 1;
+		return 0;
+	}
 	
 	private static void trainNetwork(){
 		// k episodes
-		for (int k = 0; k < 1000; k++){
+		for (int k = 0; k < 14000; k++){
 			//Run through entire training set once.
 			for (int example = 0; example < trainingSetSize; example++){
 				double[] activationInput = new double[inputLayerSize]; // We store the activation of each node (over all input and hidden layers) as we need that data during back propagation.
@@ -66,7 +72,7 @@ public class XOR {
 					for (int inputNode = 0; inputNode < 2; inputNode++){
 						inputToNeuron += hiddenLayerWeights[inputNode][hiddenNode] * activationInput[inputNode];
 					}
-					activationHidden[hiddenNode] = sigmoidActivationFunction(inputToNeuron);
+					activationHidden[hiddenNode] = stepActivationFunction(inputToNeuron);
 				}
 
 				// For the XOR network, we assume one output node.
@@ -133,7 +139,7 @@ public class XOR {
 				for (int inputNode = 0; inputNode < 2; inputNode++){
 					inputToNeuron += hiddenLayerWeights[inputNode][hiddenNode] * activationInput[inputNode];
 				}
-				activationHidden[hiddenNode] = sigmoidActivationFunction(inputToNeuron);
+				activationHidden[hiddenNode] = stepActivationFunction(inputToNeuron);
 			}
 
 			// For the XOR network, we assume one output node.
