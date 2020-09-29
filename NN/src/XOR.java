@@ -13,7 +13,7 @@ public class XOR {
 	private static double threshold = 0.5;
 	private static double[][] hiddenLayerWeights; // [from][to]
 	private static double[] outputLayerWeights;
-	private static double learningRate = 0.7; //experiment
+	private static double learningRate = 0.2; //experiment
 	
 	private static void initNetwork() {
 		trainingSetSize = trainingData.length;
@@ -57,7 +57,7 @@ public class XOR {
 	
 	private static void trainNetwork(){
 		// k episodes
-		for (int k = 0; k < 14000; k++){
+		for (int k = 0; k < 19; k++){
 			//Run through entire training set once.
 			for (int example = 0; example < trainingSetSize; example++){
 				double[] activationInput = new double[inputLayerSize]; // We store the activation of each node (over all input and hidden layers) as we need that data during back propagation.
@@ -80,20 +80,21 @@ public class XOR {
 				for (int hiddenNode = 0; hiddenNode < hiddenLayerSize; hiddenNode++){
 					inputAtOutput += outputLayerWeights[hiddenNode] * activationHidden[hiddenNode];
 				}
-				double activationOutput = sigmoidActivationFunction(inputAtOutput);
+				double activationOutput = stepActivationFunction(inputAtOutput);
 				
 				// calculating errors
 				// desired output is on array location 2; need to get rid of constant
-				double errorOfOutputNode = derivative(activationOutput) * (trainingData[example][2] - activationOutput);
+//				double errorOfOutputNode = derivative(activationOutput) * (trainingData[example][2] - activationOutput);
+				double errorOfOutputNode = (trainingData[example][2] - activationOutput);
 
 				// Calculating error of hidden layer. Special calculation since we only have one output node; i.e. no summation over next layer nodes
 				// Also adjusting weights of output layer
 				double[] errorOfHiddenNode = new double[hiddenLayerSize];
 				for (int hiddenNode = 0; hiddenNode < hiddenLayerSize; hiddenNode++){
 					errorOfHiddenNode[hiddenNode] = outputLayerWeights[hiddenNode] * errorOfOutputNode;
-					errorOfHiddenNode[hiddenNode] *= derivative(activationHidden[hiddenNode]); 
+//					errorOfHiddenNode[hiddenNode] *= derivative(activationHidden[hiddenNode]);
 				}
-				
+
 				//adjusting weights
 				//adjusting weights at output layer
 				for (int hiddenNode = 0; hiddenNode < hiddenLayerSize; hiddenNode++){
@@ -147,7 +148,7 @@ public class XOR {
 			for (int hiddenNode = 0; hiddenNode < hiddenLayerSize; hiddenNode++){
 				inputAtOutput += outputLayerWeights[hiddenNode] * activationHidden[hiddenNode];
 			}
-			double activationOutput = sigmoidActivationFunction(inputAtOutput);
+			double activationOutput = stepActivationFunction(inputAtOutput);
 
 			System.out.println("Example " + example + " has: " + activationOutput + " should be: " + trainingData[example][2]);	
 		}
