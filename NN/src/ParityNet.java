@@ -71,8 +71,6 @@ public class ParityNet {
 				}
 			}
 		}
-		
-		//TODO: set the weights manually
 
 		//2 bit
 		this.weights[0][0][0]= 1;
