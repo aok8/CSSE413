@@ -2,7 +2,7 @@ public class TrainingParity {
 
 	// Even parity bit
 	public static void main(String[] args){
-		ParityNet n = new ParityNet(7,1,1,1);
+		ParityNet n = new ParityNet(7,7,11,1);
 		double[][] inputs = generateInputs(7);
 		double[][] desiredOutput = generateOutputs(inputs);	
 		
