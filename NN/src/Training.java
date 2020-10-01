@@ -32,7 +32,7 @@ public class Training {
 					}
 				}
 			}
-			System.out.println("READ 1");
+			System.out.println("READ 1 COMPLETED");
 
 			FileInputStream reader2 = new FileInputStream(T10IMAGES);
 
@@ -52,7 +52,7 @@ public class Training {
 					}
 				}
 			}
-			System.out.println("READ 2");
+			System.out.println("READ 2 COMPLETED");
 
 			FileInputStream reader3 = new FileInputStream(TRAINLABELS);
 
@@ -65,7 +65,7 @@ public class Training {
 				int data = reader3.read();
 				output[x][data] = 1;
 			}
-			System.out.println("READ 3");
+			System.out.println("READ 3 COMPLETED");
 
 			FileInputStream reader4 = new FileInputStream(T10LABELS);
 
@@ -78,7 +78,7 @@ public class Training {
 				int data = reader4.read();
 				outputTest[x][data] = 1;
 			}
-			System.out.println("READ 4");
+			System.out.println("READ 4 COMPLETED");
 		}
 		catch (Exception e){
 			System.out.println(e);

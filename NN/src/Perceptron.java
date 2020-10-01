@@ -41,17 +41,6 @@ public class Perceptron {
 	}
 	
 	private static void trainNetwork(){
-	// TODO: Implement this method. You want to use the following fields:
-		// trainingSetSize
-		// networkSize
-		// weights array
-		// stepActivationFunction
-		// learningRate
-		// trainingData
-		
-		// calculate input to output unit: weighted sums of the inputs, followed by calling activation function
-		// calculate error: desired output - actual output (i.e. activation)
-		// adjust weights
 		for(int e = 1; e<=trainingEpisodes; e++) {
 			for(int i =0; i<trainingSetSize; i++){
 				double input = 0;
