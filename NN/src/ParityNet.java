@@ -71,7 +71,13 @@ public class ParityNet {
 				}
 			}
 		}
-
+//		int count = 0;
+//		for(int i =0; i<hiddenLayerSize; i++){
+//
+//			for(int j = 0; j<numHiddenLayers+1; j++){
+//
+//			}
+//		}
 		//2 bit
 		this.weights[0][0][0]= 1;
 		this.weights[0][0][1]= -1;
@@ -87,6 +93,7 @@ public class ParityNet {
 		this.weights[2][2][2]= 1;
 		this.weights[3][2][0]= 1;
 		this.weights[3][0][0]= 1;
+
 
 		this.weights[0][2][2] = 1;
 		this.weights[1][2][2] = 1;

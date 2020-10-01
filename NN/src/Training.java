@@ -85,9 +85,9 @@ public class Training {
 		}
 
 
-		FeedForwardNetwork n = new FeedForwardNetwork(28*28, 32, 1, 10);
-		n.initNetwork(inputs, output, 0.6, 0.5);
-		n.trainNetwork(20, true);
+		FeedForwardNetwork n = new FeedForwardNetwork(28*28, 220, 2, 10);
+		n.initNetwork(inputs, output, 0.7, 0.5);
+		n.trainNetwork(35, true);
 		n.printWeights();
 		n.testNetwork();
 		n.testNetworkBatch(10000,inputTest,outputTest,true);
