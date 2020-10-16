@@ -58,6 +58,24 @@ public class Robot {
 			add("Sorry, I don't understand that. Try again please!");
 		}
 	};
+
+	private static ArrayList<String> praiseResponses =  new ArrayList<String>(){
+		{
+			add("Thank you! I do try my best.");
+			add("Glad I could be of service!");
+		}
+	};
+
+	private static ArrayList<String> exitResponses = new ArrayList<String>(){
+		{
+			add("Have a nice day!");
+			add("I'll see you later!");
+			add("Goodbye!");
+			add("See you later!");
+			add("Glad to help! Have a nice day!");
+			add("It was a pleasure working with you. Have a great day!");
+		}
+	};
 	
 	private Scanner sc;
 	
@@ -110,7 +128,7 @@ public class Robot {
 			IndexedWord root = graph.getFirstRoot();
 			List<Pair<GrammaticalRelation, IndexedWord>> pair = graph.childPairs(root);
 			String type = root.tag();
-			String rootW = root.toString().substring(0, root.toString().length()-3);
+			String rootW = root.toString().split("(\\/)(?!.*\\/)")[0];
 
 			if(pair.size()==0){
 				String command = root.toString().toLowerCase();
@@ -150,6 +168,12 @@ public class Robot {
 					case "thanks": {
 						youreWelcome();
 						return Action.DO_NOTHING;
+					}
+					case "quit":
+					case "goodbye":
+					case "exit":
+					case "bye":{
+						exit();
 					}
 					default:{
 						unableResponse();
@@ -205,6 +229,15 @@ public class Robot {
 								name();
 								return Action.DO_NOTHING;
 							}
+							case "good":
+							case "nice":{
+								praiseResponse();
+								return Action.DO_NOTHING;
+							}
+							case "thank":{
+								youreWelcome();
+								return Action.DO_NOTHING;
+							}
 							default:{
 								break;
 							}
@@ -241,8 +274,6 @@ public class Robot {
 						return Action.CLEAN;
 					}
 					default:{
-						this.lastAction = Action.DO_NOTHING;
-						return Action.DO_NOTHING;
 					}
 				}
 
@@ -276,12 +307,11 @@ public class Robot {
 						return Action.CLEAN;
 					}
 					default:{
-						this.lastAction = Action.DO_NOTHING;
-						return Action.DO_NOTHING;
 					}
 				}
 
 			}
+
 			if(type.equalsIgnoreCase("rb")){
 				switch(rootW){
 					case "right":{
@@ -310,8 +340,18 @@ public class Robot {
 						return Action.CLEAN;
 					}
 					default:{
-						this.lastAction = Action.DO_NOTHING;
+					}
+				}
+
+			}
+
+			if(type.equalsIgnoreCase("vbp")){
+				switch(rootW){
+					case "thank":{
+						youreWelcome();
 						return Action.DO_NOTHING;
+					}
+					default:{
 					}
 				}
 
@@ -348,9 +388,7 @@ public class Robot {
 			}
 
 	    }
-	    if(!sentences.isEmpty()){
-			unableResponse();
-		}
+	    unableResponse();
 	    return Action.DO_NOTHING;
 	}
 	public static void respond(){
@@ -365,11 +403,20 @@ public class Robot {
 		int index = random.nextInt(unableResponses.size());
 		System.out.println(unableResponses.get(index));
 	}
+	public static void praiseResponse(){
+		int index = random.nextInt(praiseResponses.size());
+		System.out.println(praiseResponses.get(index));
+	}
 	public static void youreWelcome(){
 		System.out.println("You're welcome!");
 	}
 	public static void name(){
 		System.out.println("Pleasure to meet you! My name is Avis, it actually stands for A Very Intelligent Sweeper.");
+	}
+	public static void exit(){
+		int index = random.nextInt(exitResponses.size());
+		System.out.println(exitResponses.get(index));
+		System.exit(0);
 	}
 
 	static public void processDeterminer(SemanticGraph dependencies, IndexedWord root){
