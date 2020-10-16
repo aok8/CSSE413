@@ -1,5 +1,6 @@
 import java.util.*;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.IndexedWord;
@@ -29,6 +30,9 @@ public class Robot {
 	private StanfordCoreNLP pipeline;
 	private Action lastAction = Action.DO_NOTHING;
 	static Random random = new Random();
+	static int numMoves = 0;
+	static String userName = "";
+	static boolean learnedUserName = false;
 	private static ArrayList<String> responses = new ArrayList<String>(){
 		{
 			add("Got it.");
@@ -54,8 +58,6 @@ public class Robot {
 			add("I don't understand that command. Would you mind trying again?");
 			add("I didn't get that. Could you try again please?");
 			add("I can't understand that command. Would you try again please?");
-			add("I don't know that command. Please try again.");
-			add("Sorry, I don't understand that. Try again please!");
 		}
 	};
 
@@ -72,8 +74,6 @@ public class Robot {
 			add("I'll see you later!");
 			add("Goodbye!");
 			add("See you later!");
-			add("Glad to help! Have a nice day!");
-			add("It was a pleasure working with you. Have a great day!");
 		}
 	};
 	
@@ -137,32 +137,42 @@ public class Robot {
 					case "right": {
 						this.lastAction = Action.MOVE_RIGHT;
 						respond();
+						numMoves++;
 						return Action.MOVE_RIGHT;
 					}
 					case "left":{
 						this.lastAction = Action.MOVE_LEFT;
 						respond();
+						numMoves++;
 						return Action.MOVE_LEFT;
 					}
 					case "up": {
 						this.lastAction = Action.MOVE_UP;
 						respond();
+						numMoves++;
 						return Action.MOVE_UP;
 					}
 					case "down":{
 						this.lastAction = Action.MOVE_DOWN;
 						respond();
+						numMoves++;
 						return Action.MOVE_DOWN;
 					}
 					case "clean":{
 						this.lastAction = Action.CLEAN;
 						respond();
+						numMoves++;
 						return Action.CLEAN;
+					}
+					case "name":{
+						name();
+						return Action.DO_NOTHING;
 					}
 					case "more":
 					case "further":
 					case "again":{
 						respond();
+						numMoves++;
 						return this.lastAction;
 					}
 					case "thanks": {
@@ -174,6 +184,10 @@ public class Robot {
 					case "exit":
 					case "bye":{
 						exit();
+					}
+					case "moves":{
+						moveCount();
+						return Action.DO_NOTHING;
 					}
 					default:{
 						unableResponse();
@@ -193,36 +207,43 @@ public class Robot {
 							type1.equalsIgnoreCase("rp")||
 							type1.equalsIgnoreCase("vb")||
 							type1.equalsIgnoreCase("nn")||
-							type1.equalsIgnoreCase("jj")
+							type1.equalsIgnoreCase("jj")||
+							type1.equalsIgnoreCase("nns")
 					){
 						switch(word){
 							case "right":{
 								this.lastAction = Action.MOVE_RIGHT;
 								respond();
+								numMoves++;
 								return Action.MOVE_RIGHT;
 							}
 							case "left":{
 								this.lastAction = Action.MOVE_LEFT;
 								respond();
+								numMoves++;
 								return Action.MOVE_LEFT;
 							}
 							case "up":{
 								this.lastAction = Action.MOVE_UP;
 								respond();
+								numMoves++;
 								return Action.MOVE_UP;
 							}
 							case "down":{
 								this.lastAction = Action.MOVE_DOWN;
 								respond();
+								numMoves++;
 								return Action.MOVE_DOWN;
 							}
 							case "clean":{
 								this.lastAction = Action.CLEAN;
 								respond();
+								numMoves++;
 								return Action.CLEAN;
 							}
 							case "again":{
 								respond();
+								numMoves++;
 								return this.lastAction;
 							}
 							case "name":{
@@ -238,6 +259,10 @@ public class Robot {
 								youreWelcome();
 								return Action.DO_NOTHING;
 							}
+							case "moves":{
+								moveCount();
+								return Action.DO_NOTHING;
+							}
 							default:{
 								break;
 							}
@@ -251,26 +276,31 @@ public class Robot {
 					case "right":{
 						this.lastAction = Action.MOVE_RIGHT;
 						respond();
+						numMoves++;
 						return Action.MOVE_RIGHT;
 					}
 					case "left":{
 						this.lastAction = Action.MOVE_LEFT;
 						respond();
+						numMoves++;
 						return Action.MOVE_LEFT;
 					}
 					case "up":{
 						this.lastAction = Action.MOVE_UP;
 						respond();
+						numMoves++;
 						return Action.MOVE_UP;
 					}
 					case "down":{
 						this.lastAction = Action.MOVE_DOWN;
 						respond();
+						numMoves++;
 						return Action.MOVE_DOWN;
 					}
 					case "clean":{
 						this.lastAction = Action.CLEAN;
 						respond();
+						numMoves++;
 						return Action.CLEAN;
 					}
 					default:{
@@ -284,26 +314,31 @@ public class Robot {
 					case "right":{
 						this.lastAction = Action.MOVE_RIGHT;
 						respond();
+						numMoves++;
 						return Action.MOVE_RIGHT;
 					}
 					case "left":{
 						this.lastAction = Action.MOVE_LEFT;
 						respond();
+						numMoves++;
 						return Action.MOVE_LEFT;
 					}
 					case "up":{
 						this.lastAction = Action.MOVE_UP;
 						respond();
+						numMoves++;
 						return Action.MOVE_UP;
 					}
 					case "down":{
 						this.lastAction = Action.MOVE_DOWN;
 						respond();
+						numMoves++;
 						return Action.MOVE_DOWN;
 					}
 					case "clean":{
 						this.lastAction = Action.CLEAN;
 						respond();
+						numMoves++;
 						return Action.CLEAN;
 					}
 					default:{
@@ -317,26 +352,31 @@ public class Robot {
 					case "right":{
 						this.lastAction = Action.MOVE_RIGHT;
 						respond();
+						numMoves++;
 						return Action.MOVE_RIGHT;
 					}
 					case "left":{
 						this.lastAction = Action.MOVE_LEFT;
 						respond();
+						numMoves++;
 						return Action.MOVE_LEFT;
 					}
 					case "up":{
 						this.lastAction = Action.MOVE_UP;
 						respond();
+						numMoves++;
 						return Action.MOVE_UP;
 					}
 					case "down":{
 						this.lastAction = Action.MOVE_DOWN;
 						respond();
+						numMoves++;
 						return Action.MOVE_DOWN;
 					}
 					case "clean":{
 						this.lastAction = Action.CLEAN;
 						respond();
+						numMoves++;
 						return Action.CLEAN;
 					}
 					default:{
@@ -359,26 +399,31 @@ public class Robot {
 			if(name.contains("up")){
 				this.lastAction = Action.MOVE_UP;
 				keywordResponse("move up.");
+				numMoves++;
 				return Action.MOVE_UP;
 			}
 			else if(name.contains("down")){
 				this.lastAction = Action.MOVE_DOWN;
 				keywordResponse("move down.");
+				numMoves++;
 				return Action.MOVE_DOWN;
 			}
 			else if(name.contains("right")){
 				this.lastAction = Action.MOVE_RIGHT;
 				keywordResponse("move right.");
+				numMoves++;
 				return Action.MOVE_RIGHT;
 			}
 			else if(name.contains("left")){
 				this.lastAction = Action.MOVE_LEFT;
 				keywordResponse("move left.");
+				numMoves++;
 				return Action.MOVE_LEFT;
 			}
 			else if(name.contains("clean")){
 				this.lastAction = Action.CLEAN;
 				keywordResponse("clean.");
+				numMoves++;
 				return Action.CLEAN;
 			}
 			else if(name.contains("name")){
@@ -411,12 +456,50 @@ public class Robot {
 		System.out.println("You're welcome!");
 	}
 	public static void name(){
-		System.out.println("Pleasure to meet you! My name is Avis, it actually stands for A Very Intelligent Sweeper.");
+		System.out.println("My name is Avis, it actually stands for A Very Intelligent Sweeper.");
+		if(!learnedUserName){
+			try{
+				TimeUnit.SECONDS.sleep(2);
+			}
+			catch(Exception e){
+				//dont log it, this is just for user feel
+			}
+			System.out.println("What is your name?");
+			System.out.printf("> ");
+			Scanner ns = new Scanner(System.in);
+			String name = ns.nextLine();
+			name = name.toLowerCase();
+			name = name.substring(0,1).toUpperCase()+ name.substring(1);
+			learnedUserName = true;
+			userName = name;
+			System.out.printf("Pleasure to meet you %s!%n", userName);
+			addNameResponses();
+		}
+	}
+	public static void addNameResponses(){
+		responses.add(String.format("Sure thing %s!", userName));
+		responses.add(String.format("Just for you %s.", userName));
+		unableResponses.add(String.format("I'm not sure I understand that %s. Could you try again?", userName));
+		unableResponses.add(String.format("I don't get what you mean by that %s. Please try again.", userName));
+		unableResponses.add(String.format("I don't know that command %s. Please try again.", userName));
+		unableResponses.add(String.format("Sorry %s, I don't understand that. Try again please!", userName));
+		praiseResponses.add(String.format("Thank you %s!", userName));
+		praiseResponses.add(String.format("I appreciate it %s!", userName));
+		praiseResponses.add(String.format("Thanks %s, I'm trying my best!", userName));
+		exitResponses.add(String.format("Thanks for working with me %s!", userName));
+		exitResponses.add(String.format("It has been a pleasure, %s.", userName));
+		exitResponses.add(String.format("It was great working with you %s!",userName));
+		exitResponses.add(String.format("Glad to help%s! Have a nice day!", userName));
+		exitResponses.add(String.format("It was a pleasure working with you %s. Have a great day!", userName));
 	}
 	public static void exit(){
 		int index = random.nextInt(exitResponses.size());
 		System.out.println(exitResponses.get(index));
 		System.exit(0);
+	}
+
+	public static void moveCount(){
+		System.out.printf("I have made %d moves this session.\n", numMoves);
 	}
 
 	static public void processDeterminer(SemanticGraph dependencies, IndexedWord root){
