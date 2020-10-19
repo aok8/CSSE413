@@ -12,6 +12,8 @@ import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
+import com.sun.speech.freetts.Voice;
+import com.sun.speech.freetts.VoiceManager;
 
 /**
 	Represents an intelligent agent moving through a particular room.	
@@ -166,6 +168,11 @@ public class Robot {
 					}
 					case "name":{
 						name();
+						return Action.DO_NOTHING;
+					}
+					case "hi":
+					case "hello":{
+						speakAndPrint("Hello, how may I be of service?");
 						return Action.DO_NOTHING;
 					}
 					case "more":
@@ -438,25 +445,25 @@ public class Robot {
 	}
 	public static void respond(){
 		int index = random.nextInt(responses.size());
-		System.out.println(responses.get(index));
+		speakAndPrint(responses.get(index));
 	}
 	public static void keywordResponse(String direction){
 		int index = random.nextInt(keywordResponses.size());
-		System.out.println(keywordResponses.get(index)+direction);
+		speakAndPrint(keywordResponses.get(index)+direction);
 	}
 	public static void unableResponse(){
 		int index = random.nextInt(unableResponses.size());
-		System.out.println(unableResponses.get(index));
+		speakAndPrint(unableResponses.get(index));
 	}
 	public static void praiseResponse(){
 		int index = random.nextInt(praiseResponses.size());
-		System.out.println(praiseResponses.get(index));
+		speakAndPrint(praiseResponses.get(index));
 	}
 	public static void youreWelcome(){
-		System.out.println("You're welcome!");
+		speakAndPrint("You're welcome!");
 	}
 	public static void name(){
-		System.out.println("My name is Avis, it actually stands for A Very Intelligent Sweeper.");
+		speakAndPrint("My name is Avis, it actually stands for A Very Intelligent Sweeper.");
 		if(!learnedUserName){
 			try{
 				TimeUnit.SECONDS.sleep(2);
@@ -464,7 +471,7 @@ public class Robot {
 			catch(Exception e){
 				//dont log it, this is just for user feel
 			}
-			System.out.println("What is your name?");
+			speakAndPrint("What is your name?");
 			System.out.printf("> ");
 			Scanner ns = new Scanner(System.in);
 			String name = ns.nextLine();
@@ -472,7 +479,10 @@ public class Robot {
 			name = name.substring(0,1).toUpperCase()+ name.substring(1);
 			learnedUserName = true;
 			userName = name;
-			System.out.printf("Pleasure to meet you %s!%n", userName);
+			String input = String.format("Pleasure to meet you %s!%n", userName);
+			System.out.println(input);
+			speakText(input);
+//			System.out.printf("Pleasure to meet you %s!%n", userName);
 			addNameResponses();
 		}
 	}
@@ -494,12 +504,33 @@ public class Robot {
 	}
 	public static void exit(){
 		int index = random.nextInt(exitResponses.size());
-		System.out.println(exitResponses.get(index));
+		speakAndPrint(exitResponses.get(index));
 		System.exit(0);
 	}
 
 	public static void moveCount(){
 		System.out.printf("I have made %d moves this session.\n", numMoves);
+	}
+	public static void speakText(String input){
+		System.setProperty("freetts.voices", "com.sun.speech.freetts.en.us.cmu_us_kal.KevinVoiceDirectory");
+		Voice voice;
+		voice = VoiceManager.getInstance().getVoice("kevin16");
+		if(voice!=null){
+			voice.allocate();
+		}
+		try {
+			voice.setRate(190);
+			voice.setPitch(150);
+			voice.setVolume(50);
+			voice.speak(input);
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
+	}
+	public static void speakAndPrint(String input){
+		System.out.println(input);
+		speakText(input);
 	}
 
 	static public void processDeterminer(SemanticGraph dependencies, IndexedWord root){
