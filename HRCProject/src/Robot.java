@@ -50,6 +50,7 @@ public class Robot {
 			add("I think you meant for me to ");
 			add("I think you want me to ");
 			add("I'm pretty sure you meant for me to ");
+			add("I'm guessing you wanted me to ");
 		}
 	};
 
@@ -60,6 +61,11 @@ public class Robot {
 			add("I don't understand that command. Would you mind trying again?");
 			add("I didn't get that. Could you try again please?");
 			add("I can't understand that command. Would you try again please?");
+			add("Could you try again please?");
+			add("I didn't catch that, could you try again please?");
+			add("I'm not sure what that meant, would you mind trying again?");
+			add("I didn't get that. Please try again.");
+			add("Hmm, I'm not sure what that meant. Could you please try again?");
 		}
 	};
 
@@ -446,6 +452,8 @@ public class Robot {
 	public static void respond(){
 		int index = random.nextInt(responses.size());
 		speakAndPrint(responses.get(index));
+		int praise = random.nextInt(15);
+		if(praise == 8) praiseUser();
 	}
 	public static void keywordResponse(String direction){
 		int index = random.nextInt(keywordResponses.size());
@@ -463,7 +471,7 @@ public class Robot {
 		speakAndPrint("You're welcome!");
 	}
 	public static void name(){
-		speakAndPrint("My name is Avis, it actually stands for A Very Intelligent Sweeper.");
+		speakAndPrint("My name is Avis, it stands for A Very Intelligent Sweeper.");
 		if(!learnedUserName){
 			try{
 				TimeUnit.SECONDS.sleep(2);
@@ -479,7 +487,7 @@ public class Robot {
 			name = name.substring(0,1).toUpperCase()+ name.substring(1);
 			learnedUserName = true;
 			userName = name;
-			String input = String.format("Pleasure to meet you %s!%n", userName);
+			String input = String.format("Pleasure to meet you %s!", userName);
 			System.out.println(input);
 			speakText(input);
 //			System.out.printf("Pleasure to meet you %s!%n", userName);
@@ -509,7 +517,9 @@ public class Robot {
 	}
 
 	public static void moveCount(){
-		System.out.printf("I have made %d moves this session.\n", numMoves);
+		String input = String.format("I have made %d moves this session.", numMoves);
+		System.out.println(input);
+		speakText(input);
 	}
 	public static void speakText(String input){
 		System.setProperty("freetts.voices", "com.sun.speech.freetts.en.us.cmu_us_kal.KevinVoiceDirectory");
@@ -529,6 +539,18 @@ public class Robot {
 		}
 	}
 	public static void speakAndPrint(String input){
+		System.out.println(input);
+		speakText(input);
+	}
+
+	public static void praiseUser(){
+		String input;
+		if(learnedUserName){
+			input = String.format("I really appreciate you giving me commands, it is a pleasure to work with you %s!", userName);
+		}
+		else{
+			input = "I really appreciate you giving me commands, it is a pleasure to work with you!";
+		}
 		System.out.println(input);
 		speakText(input);
 	}
