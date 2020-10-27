@@ -16,8 +16,8 @@ import com.sun.speech.freetts.Voice;
 import com.sun.speech.freetts.VoiceManager;
 
 /**
-	Represents an intelligent agent moving through a particular room.	
-	The robot only has one sensor - the ability to get the status of any  
+	Represents an intelligent agent moving through a particular room.
+	The robot only has one sensor - the ability to get the status of any
 	tile in the environment through the command env.getTileStatus(row, col).
 	@author Adam Gaweda, Michael Wollowski
 */
@@ -35,6 +35,11 @@ public class Robot {
 	static int numMoves = 0;
 	static String userName = "";
 	static boolean learnedUserName = false;
+	static boolean recording = false;
+	ArrayList<Action> currentPlan = new ArrayList<>();
+	HashMap<String, ArrayList<Action>> plans = new HashMap<>();
+	static boolean executingPlan = false;
+	static boolean pathFound = false;
 	private static ArrayList<String> responses = new ArrayList<String>(){
 		{
 			add("Got it.");
@@ -84,53 +89,143 @@ public class Robot {
 			add("See you later!");
 		}
 	};
-	
+
 	private Scanner sc;
-	
+
 	/**
-	    Initializes a Robot on a specific tile in the environment. 
+	    Initializes a Robot on a specific tile in the environment.
 	*/
 
-	
+
 	public Robot (Environment env, int posRow, int posCol) {
 		this.env = env;
 		this.posRow = posRow;
 		this.posCol = posCol;
-		
+
 	    props = new Properties();
 	    props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse");
 	    pipeline = new StanfordCoreNLP(props);
 
 
 	}
-	
+
 	public int getPosRow() { return posRow; }
 	public int getPosCol() { return posCol; }
 	public void incPosRow() { posRow++; }
 	public void decPosRow() { posRow--; }
 	public void incPosCol() { posCol++; }
     public void decPosCol() { posCol--; }
-	
+
 	/**
-	   Returns the next action to be taken by the robot. A support function 
+	   Returns the next action to be taken by the robot. A support function
 	   that processes the path LinkedList that has been populates by the
 	   search functions.
 	*/
 	public Action getAction () {
+		if(executingPlan){
+			if(!currentPlan.isEmpty()){
+				Action temp = currentPlan.get(0);
+				currentPlan.remove(0);
+				return temp;
+			}
+			speakAndPrint("Plan finished.");
+			stopExecution();
+			return Action.DO_NOTHING;
+		}
 	    Annotation annotation;
 	    System.out.print("> ");
-	    sc = new Scanner(System.in); 
-        String name = sc.nextLine(); 
+	    sc = new Scanner(System.in);
+        String name = sc.nextLine();
 //	    System.out.println("got: " + name);
         annotation = new Annotation(name);
 	    pipeline.annotate(annotation);
 	    List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
+
 	    if (sentences != null && ! sentences.isEmpty()) {
 	    	CoreMap sentence = sentences.get(0);
 	    	SemanticGraph graph = sentence.get(SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation.class);
-
+	    	name = name.toLowerCase();
 			if(name.contains("not")) {
 				this.lastAction = Action.DO_NOTHING;
+				return Action.DO_NOTHING;
+			}
+			else if(name.equalsIgnoreCase("begin record")){
+				speakAndPrint("Recording.");
+				startRecord();
+				return Action.DO_NOTHING;
+			}
+			else if(name.equalsIgnoreCase("end record")){
+				endRecord();
+				speakAndPrint("Recording stopped.");
+				speakAndPrint("You should store this plan using the command \"name the plan ____\".");
+				return Action.DO_NOTHING;
+			}
+			else if(name.contains("name the plan")){
+				if(name.length()<=14){
+					String error = String.format("My apologies, I can only accept this command given in the form: " +
+							"name the plan (plan1 name).");
+					speakAndPrint(error);
+				}
+				String planName = name.substring(14);
+				planName = planName.toLowerCase();
+				storePlan(planName);
+				return Action.DO_NOTHING;
+			}
+			else if(name.contains("name plan")){
+				if(name.length()<=10){
+					String error = String.format("My apologies, I can only accept this command given in the form: " +
+							"name plan (plan1 name).");
+					speakAndPrint(error);
+				}
+				String planName = name.substring(10);
+				planName = planName.toLowerCase();
+				storePlan(planName);
+				return Action.DO_NOTHING;
+			}
+			else if(name.contains("execute plan")){
+				if(name.length()<=13){
+					String error = String.format("My apologies, I can only accept this command given in the form: " +
+							"execute plan (plan1 name).");
+					speakAndPrint(error);
+				}
+				String planName = name.substring(13);
+				planName = planName.toLowerCase();
+				setupPlanToExecute(planName);
+				return Action.DO_NOTHING;
+			}
+			else if(name.contains("execute the plan")){
+				if(name.length()<=17){
+					String error = String.format("My apologies, I can only accept this command given in the form: " +
+							"execute the plan (plan name).");
+					speakAndPrint(error);
+				}
+				String planName = name.substring(17);
+				planName = planName.toLowerCase();
+				setupPlanToExecute(planName);
+				return Action.DO_NOTHING;
+			}
+			else if(name.contains("execute symmetric plan")){
+				String planName = name.substring(23);
+				planName.toLowerCase();
+				executeSymmetricPlan(planName);
+				return Action.DO_NOTHING;
+			}
+			else if(name.contains("combine plan")){
+				name.toLowerCase();
+				combinePlans(name);
+				return Action.DO_NOTHING;
+			}
+			else if(name.contains("find a path")) {
+				Scanner in = new Scanner(name).useDelimiter("[^0-9]+");
+				int row = in.nextInt();
+				int col = in.nextInt();
+				System.out.println("Target Position: " + "[" + row + "," + col + "]");
+				bfs(row, col);
+				if(pathFound) {
+					speakAndPrint("You should store this plan using the command 'name the plan ____'.");
+				} else {
+					speakAndPrint("A path couldn't be found to this position.");
+				}
 				return Action.DO_NOTHING;
 			}
 			IndexedWord root = graph.getFirstRoot();
@@ -143,34 +238,24 @@ public class Robot {
 				command = command.split("(\\/)(?!.*\\/)")[0];
 				switch(command){
 					case "right": {
-						this.lastAction = Action.MOVE_RIGHT;
 						respond();
-						numMoves++;
-						return Action.MOVE_RIGHT;
+						return right();
 					}
 					case "left":{
-						this.lastAction = Action.MOVE_LEFT;
 						respond();
-						numMoves++;
-						return Action.MOVE_LEFT;
+						return left();
 					}
 					case "up": {
-						this.lastAction = Action.MOVE_UP;
 						respond();
-						numMoves++;
-						return Action.MOVE_UP;
+						return up();
 					}
 					case "down":{
-						this.lastAction = Action.MOVE_DOWN;
 						respond();
-						numMoves++;
-						return Action.MOVE_DOWN;
+						return down();
 					}
 					case "clean":{
-						this.lastAction = Action.CLEAN;
 						respond();
-						numMoves++;
-						return Action.CLEAN;
+						return clean();
 					}
 					case "name":{
 						name();
@@ -185,8 +270,7 @@ public class Robot {
 					case "further":
 					case "again":{
 						respond();
-						numMoves++;
-						return this.lastAction;
+						return again();
 					}
 					case "thanks": {
 						youreWelcome();
@@ -224,40 +308,29 @@ public class Robot {
 							type1.equalsIgnoreCase("nns")
 					){
 						switch(word){
-							case "right":{
-								this.lastAction = Action.MOVE_RIGHT;
+							case "right": {
 								respond();
-								numMoves++;
-								return Action.MOVE_RIGHT;
+								return right();
 							}
 							case "left":{
-								this.lastAction = Action.MOVE_LEFT;
 								respond();
-								numMoves++;
-								return Action.MOVE_LEFT;
+								return left();
 							}
-							case "up":{
-								this.lastAction = Action.MOVE_UP;
+							case "up": {
 								respond();
-								numMoves++;
-								return Action.MOVE_UP;
+								return up();
 							}
 							case "down":{
-								this.lastAction = Action.MOVE_DOWN;
 								respond();
-								numMoves++;
-								return Action.MOVE_DOWN;
+								return down();
 							}
 							case "clean":{
-								this.lastAction = Action.CLEAN;
 								respond();
-								numMoves++;
-								return Action.CLEAN;
+								return clean();
 							}
 							case "again":{
 								respond();
-								numMoves++;
-								return this.lastAction;
+								return again();
 							}
 							case "name":{
 								name();
@@ -286,35 +359,25 @@ public class Robot {
 
 			if(type.equalsIgnoreCase("VB")){
 				switch(rootW){
-					case "right":{
-						this.lastAction = Action.MOVE_RIGHT;
+					case "right": {
 						respond();
-						numMoves++;
-						return Action.MOVE_RIGHT;
+						return right();
 					}
 					case "left":{
-						this.lastAction = Action.MOVE_LEFT;
 						respond();
-						numMoves++;
-						return Action.MOVE_LEFT;
+						return left();
 					}
-					case "up":{
-						this.lastAction = Action.MOVE_UP;
+					case "up": {
 						respond();
-						numMoves++;
-						return Action.MOVE_UP;
+						return up();
 					}
 					case "down":{
-						this.lastAction = Action.MOVE_DOWN;
 						respond();
-						numMoves++;
-						return Action.MOVE_DOWN;
+						return down();
 					}
 					case "clean":{
-						this.lastAction = Action.CLEAN;
 						respond();
-						numMoves++;
-						return Action.CLEAN;
+						return clean();
 					}
 					default:{
 					}
@@ -324,35 +387,25 @@ public class Robot {
 
 			if(type.equalsIgnoreCase("jj")){
 				switch(rootW){
-					case "right":{
-						this.lastAction = Action.MOVE_RIGHT;
+					case "right": {
 						respond();
-						numMoves++;
-						return Action.MOVE_RIGHT;
+						return right();
 					}
 					case "left":{
-						this.lastAction = Action.MOVE_LEFT;
 						respond();
-						numMoves++;
-						return Action.MOVE_LEFT;
+						return left();
 					}
-					case "up":{
-						this.lastAction = Action.MOVE_UP;
+					case "up": {
 						respond();
-						numMoves++;
-						return Action.MOVE_UP;
+						return up();
 					}
 					case "down":{
-						this.lastAction = Action.MOVE_DOWN;
 						respond();
-						numMoves++;
-						return Action.MOVE_DOWN;
+						return down();
 					}
 					case "clean":{
-						this.lastAction = Action.CLEAN;
 						respond();
-						numMoves++;
-						return Action.CLEAN;
+						return clean();
 					}
 					default:{
 					}
@@ -362,35 +415,25 @@ public class Robot {
 
 			if(type.equalsIgnoreCase("rb")){
 				switch(rootW){
-					case "right":{
-						this.lastAction = Action.MOVE_RIGHT;
+					case "right": {
 						respond();
-						numMoves++;
-						return Action.MOVE_RIGHT;
+						return right();
 					}
 					case "left":{
-						this.lastAction = Action.MOVE_LEFT;
 						respond();
-						numMoves++;
-						return Action.MOVE_LEFT;
+						return left();
 					}
-					case "up":{
-						this.lastAction = Action.MOVE_UP;
+					case "up": {
 						respond();
-						numMoves++;
-						return Action.MOVE_UP;
+						return up();
 					}
 					case "down":{
-						this.lastAction = Action.MOVE_DOWN;
 						respond();
-						numMoves++;
-						return Action.MOVE_DOWN;
+						return down();
 					}
 					case "clean":{
-						this.lastAction = Action.CLEAN;
 						respond();
-						numMoves++;
-						return Action.CLEAN;
+						return clean();
 					}
 					default:{
 					}
@@ -410,34 +453,24 @@ public class Robot {
 
 			}
 			if(name.contains("up")){
-				this.lastAction = Action.MOVE_UP;
 				keywordResponse("move up.");
-				numMoves++;
-				return Action.MOVE_UP;
+				return up();
 			}
 			else if(name.contains("down")){
-				this.lastAction = Action.MOVE_DOWN;
 				keywordResponse("move down.");
-				numMoves++;
-				return Action.MOVE_DOWN;
+				return down();
 			}
 			else if(name.contains("right")){
-				this.lastAction = Action.MOVE_RIGHT;
 				keywordResponse("move right.");
-				numMoves++;
-				return Action.MOVE_RIGHT;
+				return right();
 			}
 			else if(name.contains("left")){
-				this.lastAction = Action.MOVE_LEFT;
 				keywordResponse("move left.");
-				numMoves++;
-				return Action.MOVE_LEFT;
+				return left();
 			}
 			else if(name.contains("clean")){
-				this.lastAction = Action.CLEAN;
 				keywordResponse("clean.");
-				numMoves++;
-				return Action.CLEAN;
+				return clean();
 			}
 			else if(name.contains("name")){
 				keywordResponse("tell you my name.");
@@ -449,6 +482,203 @@ public class Robot {
 	    unableResponse();
 	    return Action.DO_NOTHING;
 	}
+
+	public Action up(){
+		if(recording){
+			currentPlan.add(Action.MOVE_UP);
+		}
+		this.lastAction = Action.MOVE_UP;
+		numMoves++;
+		return Action.MOVE_UP;
+	}
+
+	public Action down(){
+		if(recording){
+			currentPlan.add(Action.MOVE_DOWN);
+		}
+		this.lastAction = Action.MOVE_DOWN;
+		numMoves++;
+		return Action.MOVE_DOWN;
+	}
+
+	public Action left(){
+		if(recording){
+			currentPlan.add(Action.MOVE_LEFT);
+		}
+		this.lastAction = Action.MOVE_LEFT;
+		numMoves++;
+		return Action.MOVE_LEFT;
+	}
+
+	public Action right(){
+		if(recording){
+			currentPlan.add(Action.MOVE_RIGHT);
+		}
+		this.lastAction = Action.MOVE_RIGHT;
+		numMoves++;
+		return Action.MOVE_RIGHT;
+	}
+
+	public Action clean(){
+		if(recording){
+			currentPlan.add(Action.CLEAN);
+		}
+		this.lastAction = Action.CLEAN;
+		numMoves++;
+		return Action.CLEAN;
+	}
+
+	public Action again(){
+		if(recording){
+			currentPlan.add(this.lastAction);
+		}
+		numMoves++;
+		return this.lastAction;
+	}
+
+	public void startRecord(){
+		if (!recording){
+			currentPlan = new ArrayList<>();
+		}
+		recording = true;
+	}
+	public void endRecord(){
+		if(recording){
+			recording= false;
+		}
+		else{
+			speakAndPrint("I was not recording.");
+		}
+	}
+
+	public void storePlan(String name){
+		if(currentPlan.isEmpty()){
+			speakAndPrint("Current plan is empty.");
+		}
+		else if(plans.containsKey(name)){
+			String error = String.format("My apologies, there is already a plan with the name %s.%n" +
+					"Please try again with a different name.", name);
+			speakAndPrint(error);
+		}
+		else{
+			plans.put(name, currentPlan);
+			String answer = String.format("Named the plan %s.", name);
+			speakAndPrint(answer);
+			currentPlan = new ArrayList<>();
+			recording = false;
+		}
+	}
+	public void setupPlanToExecute(String name){
+		if(!plans.containsKey(name)){
+			String error = String.format("My apologies, there is no plan with the name %s.", name);
+			speakAndPrint(error);
+		}
+		else{
+			String starting = String.format("Starting plan %s.", name);
+			speakAndPrint(starting);
+			recording = false;
+			currentPlan = (ArrayList<Action>)plans.get(name).clone();
+			executingPlan = true;
+		}
+	}
+
+	public void executeSymmetricPlan(String name){
+		if(!plans.containsKey(name)){
+			String error = String.format("My apologies, there is no plan with the name %s.", name);
+			speakAndPrint(error);
+		}
+		else{
+			String starting = String.format("Starting symmetric plan %s.", name);
+			speakAndPrint(starting);
+			recording = false;
+			ArrayList<Action> temp = (ArrayList<Action>)plans.get(name).clone();
+			currentPlan = giveSymmetricPlan(temp);
+			executingPlan = true;
+		}
+	}
+	public ArrayList<Action> giveSymmetricPlan(ArrayList<Action> orig){
+		if(orig.isEmpty()){
+			return orig;
+		}
+		ArrayList<Action> symmetric = new ArrayList<>();
+		for(Action a: orig){
+			switch (a){
+				case MOVE_UP:
+					symmetric.add(Action.MOVE_DOWN);
+					break;
+				case MOVE_DOWN:
+					symmetric.add(Action.MOVE_UP);
+					break;
+				case MOVE_LEFT:
+					symmetric.add(Action.MOVE_RIGHT);
+					break;
+				case MOVE_RIGHT:
+					symmetric.add(Action.MOVE_LEFT);
+					break;
+				case CLEAN:
+					symmetric.add(Action.CLEAN);
+					break;
+				default:
+					symmetric.add(Action.DO_NOTHING);
+					break;
+			}
+		}
+		return symmetric;
+	}
+	public void stopExecution(){
+		currentPlan = new ArrayList<>();
+		executingPlan = false;
+	}
+	public void combinePlans(String name){
+		if(name.length()<=13){
+			String error = String.format("My apologies, I can only accept this command given in the form: " +
+					"combine plan (plan1 name) and (plan2 name).");
+			speakAndPrint(error);
+			return;
+		}
+		String test = name.substring(13);
+		if(!test.contains(" ")){
+			String error = String.format("My apologies, I can only accept this command given in the form: " +
+					"combine plan (plan1 name) and (plan2 name).");
+			speakAndPrint(error);
+		}
+		else if(!test.contains("and")){
+			String error = String.format("My apologies, I can only accept this command given in the form: " +
+					"combine plan (plan1 name) and (plan2 name).");
+			speakAndPrint(error);
+		}
+		else{
+			String[] planString = test.split(" and ");
+			if(planString.length!= 2){
+				String error = String.format("My apologies, I can only accept this command given in the form: " +
+						"combine plan (plan1 name) and (plan2 name).");
+				speakAndPrint(error);
+			}
+			else{
+				String plan1 = planString[0];
+				String plan2 = planString[1];
+				if(plans.containsKey(plan1)){
+					if(plans.containsKey(plan2)){
+						recording = false;
+						executingPlan = false;
+						this.currentPlan = (ArrayList<Action>)plans.get(plan1).clone();
+						this.currentPlan.addAll((ArrayList<Action>)plans.get(plan2).clone());
+						speakAndPrint("I combined the plans successfully.");
+						speakAndPrint("You should store this plan using the command \"name the plan ____\".");
+					}
+					else{
+						String error = String.format("My apologies, there is no plan with the name %s.", plan2);
+						speakAndPrint(error);
+					}
+				}
+				else{
+					String error = String.format("My apologies, there is no plan with the name %s.", plan1);
+					speakAndPrint(error);
+				}
+			}
+		}
+	}
+
 	public static void respond(){
 		int index = random.nextInt(responses.size());
 		speakAndPrint(responses.get(index));
@@ -490,7 +720,6 @@ public class Robot {
 			String input = String.format("Pleasure to meet you %s!", userName);
 			System.out.println(input);
 			speakText(input);
-//			System.out.printf("Pleasure to meet you %s!%n", userName);
 			addNameResponses();
 		}
 	}
@@ -580,6 +809,107 @@ public class Robot {
 		System.out.println("Action: " + root.originalText().toLowerCase() + prt.second.originalText().toLowerCase());
 		System.out.println("Type of object: " + dobj.second.originalText().toLowerCase());
 		System.out.println("Identity of object: " + newS.get(0).second.originalText().toLowerCase());
+	}
+	public void bfs(int row, int col) {
+		Tile[][] tiles = this.env.getTiles();
+		Queue<State> open = new LinkedList<State>();
+		LinkedList<Tile> openTiles = new LinkedList<Tile>();
+		LinkedList<Tile> closed = new LinkedList<Tile>();
+		//get the locations of the targets
+		//LinkedList<Position> targets = env.getTargets();
+		//add the root to the open queue
+		open.offer(new State(new Position(this.posRow, this.posCol), new ArrayList<>()));
+		openTiles.add(tiles[this.posRow][this.posCol]);
+
+		while(true) {
+			//failure criteria
+			if(open.size() == 0) {
+				System.out.println("hit failure criteria");
+				return;
+			}
+			State current = open.poll();
+			int cRow = current.getPos().row;
+			int cCol = current.getPos().col;
+			closed.add(tiles[cRow][cCol]);
+			openTiles.remove(tiles[cRow][cCol]);
+
+			boolean locationReached = false;
+			if(cRow == row && cCol == col) {
+				locationReached = true;
+				this.currentPlan = current.getActions();
+				this.pathFound = true;
+				return;
+			}
+
+			if(!locationReached) {
+				//create states for the children
+				//checking tile below current
+				if(env.validPos(cRow + 1, cCol)) {
+					if(openTiles.contains(tiles[cRow + 1][cCol]) || closed.contains(tiles[cRow + 1][cCol])) {
+						//do nothing
+					} else {
+						ArrayList<Action> newActions = current.getActions();
+						newActions.add(Action.MOVE_DOWN);
+						open.offer(new State(new Position(cRow + 1, cCol), newActions));
+						openTiles.add(tiles[cRow + 1][cCol]);
+					}
+				}
+				//checking tile above current
+				if(env.validPos(cRow - 1, cCol)) {
+					if(openTiles.contains(tiles[cRow - 1][cCol]) || closed.contains(tiles[cRow - 1][cCol])) {
+						//do nothing
+					} else {
+						ArrayList<Action> newActions = current.getActions();
+						newActions.add(Action.MOVE_UP);
+						open.offer(new State(new Position(cRow - 1, cCol), newActions));
+						openTiles.add(tiles[cRow - 1][cCol]);
+					}
+				}
+				//checking tile to the right of current
+				if(env.validPos(cRow, cCol + 1)) {
+					if(openTiles.contains(tiles[cRow][cCol + 1]) || closed.contains(tiles[cRow][cCol + 1])) {
+						//do nothing
+					} else {
+						ArrayList<Action> newActions = current.getActions();
+						newActions.add(Action.MOVE_RIGHT);
+						open.offer(new State(new Position(cRow, cCol + 1), newActions));
+						openTiles.add(tiles[cRow][cCol + 1]);
+					}
+				}
+				//checking tile to the left of current
+				if(env.validPos(cRow, cCol - 1)) {
+					if(openTiles.contains(tiles[cRow][cCol -1]) || closed.contains(tiles[cRow][cCol - 1])) {
+						//do nothing
+					} else {
+						ArrayList<Action> newActions = current.getActions();
+						newActions.add(Action.MOVE_LEFT);
+						open.offer(new State(new Position(cRow, cCol - 1), newActions));
+						openTiles.add(tiles[cRow][cCol - 1]);
+					}
+				}
+			}
+		}
+	}
+
+	//this class is used while searching. it stores a tile and its position
+	private class State {
+		private Position pos;
+		private double heuristicValue;
+		private ArrayList<Action> actions;
+
+		public State(Position p, ArrayList<Action> a) {
+			this.pos = p;
+			this.actions = a;
+		}
+
+		public Position getPos() {
+			return this.pos;
+		}
+
+		public ArrayList<Action> getActions() {
+			ArrayList<Action> temp = new ArrayList<Action>(this.actions);
+			return temp;
+		}
 	}
 
 
