@@ -47,90 +47,65 @@ public class Robot {
 	public Action getAction () {
 		//need to add the ability to look for the next nearest position if already taken, right now all robots can find the same target position
 		otherRobots = env.getRobots();
-//		if (toCleanOrNotToClean) {
-//			toCleanOrNotToClean = false;
-//			return Action.CLEAN;
-//		}
-		toCleanOrNotToClean = true;
-		if(target==null){ // there is no target node
-			Position pos = getClosestAvailablePosition();
-			if(pos.col!=-1&& pos.row!=-1){
-				System.out.println("BFS");
-				bfs(pos.row, pos.col);
-				target = pos;
-				System.out.println("ROBOT "+posRow+","+posCol+" TARGETING: "+target.row+", "+ target.col);
-			}else{
-				return Action.DO_NOTHING;
-			}
+		if (toCleanOrNotToClean) {
+			toCleanOrNotToClean = false;
+			return Action.CLEAN;
 		}
-		else{ // there is a target node
-			if(!currentPlan.isEmpty()) {
-				Action answer = currentPlan.get(0);
-				currentPlan.remove(0);
-				switch (answer){
-					case MOVE_UP:{
-						if(robotInPosition(posRow-1,posCol)){
-							bfs(target.row, target.col);
-							if(!currentPlan.isEmpty()){
-								answer = currentPlan.get(0);
-								currentPlan.remove(0);
-								return answer;
-							}else{
+		toCleanOrNotToClean = true;
+		Position position = getClosestAvailablePosition();
+		if(target== null){
+			if(otherRobots!= null){
+				for(Robot r : otherRobots){
+					if(r!= this){
+						if(r.target!=null){
+							if(r.target.col==position.col && r.target.row == position.row){
 								return Action.DO_NOTHING;
 							}
 						}
-						break;
-					}
-					case MOVE_DOWN:{
-						if(robotInPosition(posRow+1,posCol)){
-							bfs(target.row, target.col);
-							if(!currentPlan.isEmpty()){
-								answer = currentPlan.get(0);
-								currentPlan.remove(0);
-								return answer;
-							}else{
-								return Action.DO_NOTHING;
-							}
-						}
-						break;
-					}
-					case MOVE_LEFT:{
-						if(robotInPosition(posRow,posCol+1)){
-							bfs(target.row, target.col);
-							if(!currentPlan.isEmpty()){
-								answer = currentPlan.get(0);
-								currentPlan.remove(0);
-								return answer;
-							}else{
-								return Action.DO_NOTHING;
-							}
-						}
-						break;
-					}
-					case MOVE_RIGHT:{
-						if(robotInPosition(posRow,posCol-1)){
-							bfs(target.row, target.col);
-							if(!currentPlan.isEmpty()){
-								answer = currentPlan.get(0);
-								currentPlan.remove(0);
-								return answer;
-							}else{
-								return Action.DO_NOTHING;
-							}
-						}
-						break;
-					}
-					default: {
-						return answer;
 					}
 				}
-				return answer;
-			}else{
-				target = null;
+				target = position;
+			}
+			else{
+				target = position;
+			}
+		}
+		if((position.row == -1) && (position.col == -1)&& !pathFound){
+			return Action.CLEAN;
+		}
+		else if(position.row ==posRow && position.col==posCol) {
+			return Action.CLEAN;
+		}
+		target= position;
+		bfs(position.row,position.col);
+		if(pathFound){
+			if(!currentPlan.isEmpty()){
+				Action a =currentPlan.get(0);
+				currentPlan.remove(0);
+				return a;
+			}
+			else{
+				pathFound = false;
 				return Action.CLEAN;
 			}
 		}
-		return Action.DO_NOTHING;
+		else{
+			return Action.CLEAN;
+		}
+
+//		int foo = (int)(Math.random()*4);
+//		switch(foo) {
+//        case 0:
+//        	return Action.MOVE_RIGHT;
+//        case 1:
+//        	return Action.MOVE_LEFT;
+//        case 2:
+//        	return Action.MOVE_UP;
+//        case 3:
+//        	return Action.MOVE_DOWN;
+//        default:
+//        	return Action.CLEAN;
+//		}
 	}
 	public Position getClosestPosition(){
 		Tile[][] tiles  = env.getTiles();
@@ -183,11 +158,8 @@ public class Robot {
 		}
 		return pos;
 	}
-//	public static double distance(int x1, int x2, int y1, int y2){
-//		return Math.sqrt(Math.pow((x2-x1),2) + Math.pow((y2-y1), 2));
-//	}
 	public static double distance(int x1, int x2, int y1, int y2){
-		return Math.abs(x1-x2)+Math.abs(y1-y2);
+		return Math.sqrt(Math.pow((x2-x1),2) + Math.pow((y2-y1), 2));
 	}
 	private class State {
 		private Position pos;
@@ -243,7 +215,7 @@ public class Robot {
 			if (!locationReached) {
 				//create states for the children
 				//checking tile below current
-				if (env.validPos(cRow + 1, cCol)&&!robotInPosition(cRow+1, cCol)) {
+				if (env.validPos(cRow + 1, cCol)) {
 					if (openTiles.contains(tiles[cRow + 1][cCol]) || closed.contains(tiles[cRow + 1][cCol])) {
 						//do nothing
 					} else {
@@ -254,7 +226,7 @@ public class Robot {
 					}
 				}
 				//checking tile above current
-				if (env.validPos(cRow - 1, cCol)&&!robotInPosition(cRow-1, cCol)) {
+				if (env.validPos(cRow - 1, cCol)) {
 					if (openTiles.contains(tiles[cRow - 1][cCol]) || closed.contains(tiles[cRow - 1][cCol])) {
 						//do nothing
 					} else {
@@ -265,7 +237,7 @@ public class Robot {
 					}
 				}
 				//checking tile to the right of current
-				if (env.validPos(cRow, cCol + 1)&&!robotInPosition(cRow, cCol+1)) {
+				if (env.validPos(cRow, cCol + 1)) {
 					if (openTiles.contains(tiles[cRow][cCol + 1]) || closed.contains(tiles[cRow][cCol + 1])) {
 						//do nothing
 					} else {
@@ -276,7 +248,7 @@ public class Robot {
 					}
 				}
 				//checking tile to the left of current
-				if (env.validPos(cRow, cCol - 1)&&!robotInPosition(cRow, cCol-1)) {
+				if (env.validPos(cRow, cCol - 1)) {
 					if (openTiles.contains(tiles[cRow][cCol - 1]) || closed.contains(tiles[cRow][cCol - 1])) {
 						//do nothing
 					} else {
@@ -289,17 +261,6 @@ public class Robot {
 			}
 		}
 	}
-	public boolean robotInPosition(int row, int col){
-		for(Robot r: env.getRobots()){
-			if(r!= this){
-				if(r.posRow == row && r.posCol == col){
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
 
 
 }
